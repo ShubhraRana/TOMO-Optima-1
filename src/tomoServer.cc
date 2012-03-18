@@ -1,4 +1,5 @@
 #include<iostream>
+#include<cstdlib>
 #include<ns3/core-module.h>
 #include<ns3/internet-module.h>
 #include<ns3/network-module.h>
@@ -18,11 +19,11 @@ struct Connection
     Ptr<treeMeshNode> Node;
     int type;
 };
-
 //An object to hold each node information
 class treeMeshNode: public Object
 {
     public:
+        int index;
         // A reference to the actual Node(Client)
         Ptr<Node> Nodes;
         // a list of connections
@@ -50,17 +51,19 @@ class tomoServer
         }
         
         //Adds a client
-        bool addClient(Ptr<Node> node)
+        bool addClient(Ptr<Node> node, int nodeNumber)
         {
             int i;
-            if(Server->connections.empty() && Server->Nodes == NULL)
+            if(Server->Nodes == NULL)
             {
+                cout<<"Server\n";
+                cout.flush();
                 Server->Nodes = node;
                 return true;
-                   cout<<"Server\n";
             }
             Ptr<treeMeshNode> newClient = CreateObject<treeMeshNode>();
             newClient->Nodes = node;
+            newClient->index = nodeNumber;
             Ptr<treeMeshNode> traversalPointer = NULL;
             deque<Ptr<treeMeshNode> >remainingNodes;
             remainingNodes.push_back(Server);
@@ -71,7 +74,6 @@ class tomoServer
                 remainingNodes.pop_front();
                 if(traversalPointer->connections.size() < MAX_CONNECTIONS)
                 {
-                    cout<<"Client\n";
                     struct Connection connections;
                     connections.type = TREE;
                     connections.Node = newClient;
@@ -86,7 +88,27 @@ class tomoServer
                 }
             }
             return false;
-         }
+        }
+        void bf_traversal()
+        {
+            int i = 0;
+            Ptr<treeMeshNode> traversalPointer = NULL;
+            deque<Ptr<treeMeshNode> > remainingNodes;
+            remainingNodes.push_back(Server);
+            while(!remainingNodes.empty())
+            {
+                traversalPointer = remainingNodes.front();
+                remainingNodes.pop_front();
+                cout<<traversalPointer->index<<"\n";
+                i = 0;
+                while(i < traversalPointer->connections.size())
+                {
+                    remainingNodes.push_back(traversalPointer->connections[i].Node);
+                    i++;
+                }
+             }
+        }
+
 };
 
 int main(int argc, char**argv)
@@ -94,10 +116,10 @@ int main(int argc, char**argv)
     tomoServer Server;
     Ptr<Node> nodes = CreateObject<Node>();
     Ptr<Node> clientNode = CreateObject<Node>();
-    int i =100;
-    //try adding 10 nodes all of which are onwe and the same
-    while(i--)
-        Server.addClient(nodes);
-    Server.addClient(clientNode);
+    int i = 0;
+    //try adding 100 nodes all of which are one and the same
+    while(i++ < 100)
+        Server.addClient(nodes,rand());
+    Server.bf_traversal();
     return 0;
 }
